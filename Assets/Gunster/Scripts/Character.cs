@@ -34,6 +34,14 @@ public class Character : MonoBehaviour
 
 	[SerializeField] LayerMask _whatIsGround;
 
+	[SerializeField] ParticleEffect _damageEffect;
+
+	[SerializeField] CharacterHead _head;
+	[SerializeField] CharacterHand _handLeft;
+	[SerializeField] CharacterHand _handRight;
+	[SerializeField] CharacterGun _gun;
+	[SerializeField] GameObject _bulletSpawn;
+
 	Transform _skyCheck;    
 	const float _skyCheckRadius = 0.05f;
 
@@ -82,6 +90,16 @@ public class Character : MonoBehaviour
 			}
 		}
 	}
+
+	void OnCollisionEnter2D (Collision2D collision)
+	{
+		// test
+		//if (collision.gameObject.tag == "Terrain")
+		{
+			Damage (0, collision.rigidbody.position);
+		}
+	}
+
 
 	// public functions ---------------------------------------------------
 	public void Move (float horizontal, float vertical, float horizontalRaw, float verticalRaw)
@@ -156,6 +174,20 @@ public class Character : MonoBehaviour
 		{
 			return;
 		}
+
+		//Debug.Log (aimPosition);
+		const float partsAngleOffset = -90.0f;
+		const float precisionAngle = 10.0f;
+
+		float shootAngle = partsAngleOffset + precisionAngle - Utility.GetAngle (transform.position, aimPosition);
+		//float shootAngle = partsAngleOffset - Utility.GetAngle (_bulletSpawn.transform.position, aimPosition);
+		Debug.Log (shootAngle);
+		         
+		_head.SetShootAngle (shootAngle);
+		_handLeft.SetShootAngle (shootAngle);
+		_handRight.SetShootAngle (shootAngle);
+		_gun.SetShootAngle (shootAngle);
+
 	}
 
 
@@ -224,13 +256,27 @@ public class Character : MonoBehaviour
 		Collider2D[] colliders = Physics2D.OverlapCircleAll(_skyCheck.position, _skyCheckRadius, _whatIsGround);
 		for (int i = 0; i < colliders.Length; i++)
 		{
-			if (colliders[i].gameObject != gameObject)
+			if (colliders[i].gameObject != gameObject && 
+				(colliders[i].gameObject.tag == "Field" || colliders[i].gameObject.tag == "Field Object"))
 			{
 				return false;
 			}
 		}
 
 		return true;
+	}
+
+	void Damage (int damage, Vector2 damagePosition)
+	{
+		// damage effect
+		var damageEffect = Instantiate(_damageEffect, transform.position, transform.rotation) as ParticleEffect;
+
+		float angle = -Utility.GetAngle (_rigidbody.position, damagePosition);
+		damageEffect.RotateParticle (angle);
+		damageEffect.FollowTarget (gameObject);
+
+
+		// HP
 	}
 
 	// coroutine ----------------------------------------------------------

@@ -30,13 +30,13 @@ public class CharacterControl : MonoBehaviour
 		userCharacter.Move(horizontal, vertical, horizontalRaw, verticalRaw);
 
 
-
 		bool shoot = CrossPlatformInputManager.GetButton ("Shoot");
 		if (shoot) 
 		{
-			Vector3 mousePosition = CrossPlatformInputManager.mousePosition;
+			Vector3 mouseScreenPosition = CrossPlatformInputManager.mousePosition;
+			Vector3 mouseWorldPosition = Camera.main.ScreenToWorldPoint (mouseScreenPosition);
 
-			userCharacter.Shoot (mousePosition);
+			userCharacter.Shoot (mouseWorldPosition);
 		}
 	}
 }

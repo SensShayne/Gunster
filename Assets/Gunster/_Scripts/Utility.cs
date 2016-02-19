@@ -25,9 +25,30 @@ public static class Utility
 		return degree;
 	} 
 
+	public static float CalcDefaultUpAngle (float criteriaAngle)
+	{
+		return 0.0f + criteriaAngle;
+	}
+
+	public static float CalcDefaultDownAngle (float criteriaAngle)
+	{
+		return 180.0f + criteriaAngle;
+	}
+
+	public static float CalcDefaultLeftAngle (float criteriaAngle)
+	{
+		return 90.0f + criteriaAngle;
+	}
+
+	public static float CalcDefaultRightAngle (float criteriaAngle)
+	{
+		return -90.0f + criteriaAngle;
+	}
+
 	// unity functions ---------------------------------------------------
 	// public functions --------------------------------------------------
-	// coroutine ---------------------------------------------------------
 	// private functions -------------------------------------------------
+	// property ----------------------------------------------------------
 	// animation event ---------------------------------------------------
+	// coroutine ---------------------------------------------------------
 }

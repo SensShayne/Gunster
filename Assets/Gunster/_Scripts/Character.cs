@@ -22,6 +22,53 @@ public enum MoveDirection
 	FORWARD = 1
 }
 
+
+
+// Character Parts ------------------------------------------------------------------
+public class CharacterParts : MonoBehaviour 
+{
+	private float _defaultSpriteAngle;
+
+	public float defaultSpriteAngle
+	{
+		get { return _defaultSpriteAngle; }
+		set { _defaultSpriteAngle = value; }
+	}
+		
+	public virtual void LookAt (Vector3 sourcePostion, Vector3 targetPosition, CharacterPose characterPose)
+	{
+		float lookAngle = Mathf.Abs(Utility.GetAngle (sourcePostion, targetPosition, true, false)) + defaultSpriteAngle;
+
+		float revisionAngle;
+
+		switch (characterPose)
+		{
+			case CharacterPose.CROWL:
+				{
+					revisionAngle = Mathf.Clamp (lookAngle, 
+						Utility.CalcDefaultLeftAngle (defaultSpriteAngle)-Character.CROWL_POSE_ANGLE_RANGE, 
+						Utility.CalcDefaultLeftAngle (defaultSpriteAngle)+Character.CROWL_POSE_ANGLE_RANGE);
+				}
+				break;
+			default:
+				{
+					revisionAngle = Mathf.Clamp (lookAngle, 
+						Utility.CalcDefaultUpAngle (defaultSpriteAngle), 
+						Utility.CalcDefaultDownAngle (defaultSpriteAngle));
+				}
+				break;
+		}
+
+		transform.rotation = Quaternion.Euler(new Vector3(0,0,revisionAngle));
+	}
+
+	public void ResetRotation ()
+	{
+		transform.rotation = Quaternion.identity;
+	}
+}
+
+// Character ------------------------------------------------------------------
 [RequireComponent(typeof (Animator))]
 [RequireComponent(typeof (Rigidbody2D))]
 public class Character : MonoBehaviour 
@@ -39,11 +86,12 @@ public class Character : MonoBehaviour
 	[SerializeField] CharacterHead _head;
 	[SerializeField] CharacterHandLeft _handLeft;
 	[SerializeField] CharacterHandRight _handRight;
-	[SerializeField] CharacterGun _gun;
-	[SerializeField] BulletSpawn _bulletSpawn;
+	[SerializeField] CharacterWeapon _weapon;
 	[SerializeField] Transform _boosterOutput;
 
 	public const float CROWL_POSE_ANGLE_RANGE = 20.0f;
+
+
 
 	Transform _skyCheck;    
 	const float _skyCheckRadius = 0.05f;
@@ -51,10 +99,7 @@ public class Character : MonoBehaviour
 	Animator _animator;
 	Rigidbody2D _rigidbody;
 
-	MoveDirection _moveDirection = MoveDirection.STOP;
-	CharacterPose _pose = CharacterPose.STAND;
 
-	bool _flip = false;
 
 	bool _death = false;
 
@@ -73,11 +118,11 @@ public class Character : MonoBehaviour
 		{
 			if (IsSkying ())
 			{
-				SetPose (CharacterPose.SKY);
+				pose = CharacterPose.SKY;
 			}
 			else
 			{
-				SetPose (CharacterPose.STAND);
+				pose = CharacterPose.STAND;
 			}
 		}
 		// test
@@ -114,7 +159,7 @@ public class Character : MonoBehaviour
 
 		// move
 		Vector2 position = transform.position;
-		if (_pose == CharacterPose.SKY) 
+		if (pose == CharacterPose.SKY) 
 		{
 			position.x += horizontal * MoveSpeed();
 		} 
@@ -136,21 +181,21 @@ public class Character : MonoBehaviour
 		// pose
 		if (IsSkying ())
 		{
-			SetPose (CharacterPose.SKY);
+			pose = CharacterPose.SKY;
 		}
 		else
 		{
 			if (-0.5f <= vertical && vertical < 0.0f)
 			{
-				SetPose (CharacterPose.CROUCH);
+				pose = CharacterPose.CROUCH;
 			}
 			else if (-1.0f <= vertical && vertical < -0.5f)
 			{
-				SetPose (CharacterPose.CROWL);
+				pose = CharacterPose.CROWL;
 			}
 			else if (vertical == 0.0f)
 			{
-				SetPose (CharacterPose.STAND);
+				pose = CharacterPose.STAND;
 			}
 		}
 
@@ -158,16 +203,16 @@ public class Character : MonoBehaviour
 		// direction
 		if (horizontalRaw == 0)
 		{
-			SetMoveDirection (MoveDirection.STOP);
+			moveDirection = MoveDirection.STOP;
 		}
 		else 
 		{
-			SetMoveDirection (MoveDirection.FORWARD);
+			moveDirection = MoveDirection.FORWARD;
 
 			if ((horizontal > 0 && !_flip) || 
 				(horizontal < 0 && _flip))
 			{
-				Flip ();
+				flip = !flip;
 			}
 		}                                                                                             
 	}
@@ -179,35 +224,32 @@ public class Character : MonoBehaviour
 			return;
 		}
 
-		// angle for sprite rotation range is -90 ~ 90
-		const float offsetAngleForPartsRotation = -90.0f;
 
-		float angleForSpriteRotation = Mathf.Abs(Utility.GetAngle (_gun.transform.position, mousePosition, true, false)) + offsetAngleForPartsRotation;
 
-		_head.SetShootAngle (angleForSpriteRotation, _pose);
-		_handLeft.SetShootAngle (angleForSpriteRotation, _pose);
-		_handRight.SetShootAngle (angleForSpriteRotation, _pose);
-		_gun.SetShootAngle (angleForSpriteRotation, _pose);
+		_head.LookAt (_weapon.transform.position, mousePosition, pose);
+		_handLeft.LookAt (_weapon.transform.position, mousePosition, pose);
+		_handRight.LookAt (_weapon.transform.position, mousePosition, pose);
+		_weapon.LookAt (_weapon.transform.position, mousePosition, pose);
+
 
 		// flip
-		bool checkThatAimPositionIsRight = mousePosition.x > transform.position.x; 
-		if ((checkThatAimPositionIsRight && !_flip) || 
-			(!checkThatAimPositionIsRight && _flip))
+		bool checkThatMousePositionIsRight = mousePosition.x > transform.position.x; 
+		if ((checkThatMousePositionIsRight && !_flip) || 
+			(!checkThatMousePositionIsRight && _flip))
 		{
-			Flip ();
+			flip = !flip;
 		}
 
-		// gun shoot
-		float angleForBulletDirection = -Utility.GetAngle (_gun.transform.position, mousePosition);
-		_bulletSpawn.SetShootAngle (angleForBulletDirection, _pose);
-		_gun.Shoot();
+
+		// shoot
+		_weapon.Shoot();
 	}
 
 
 	// private functions --------------------------------------------------
 	float MoveSpeed()
 	{
-		switch (_pose) 
+		switch (pose) 
 		{
 			case CharacterPose.STAND:
 				{
@@ -232,20 +274,6 @@ public class Character : MonoBehaviour
 		}
 	}
 
-	void SetPose (CharacterPose pose)
-	{
-		_pose = pose;
-
-		_animator.SetInteger ("pose", (int)pose);
-	}
-
-	void SetMoveDirection (MoveDirection moveDirection)
-	{
-		_moveDirection = moveDirection;
-
-		_animator.SetInteger ("move", (int)moveDirection);
-	}
-
 	void Death (DeathDirection deathDirection)
 	{
 		_animator.SetInteger ("death", (int)deathDirection);
@@ -253,15 +281,6 @@ public class Character : MonoBehaviour
 		_animator.SetTrigger ("deathTrigger");
 
 		_death = true;
-	}
-
-	void Flip()
-	{
-		_flip = !_flip;
-
-		Vector3 theScale = transform.localScale;
-		theScale.x *= -1;
-		transform.localScale = theScale;
 	}
 
 	bool IsSkying()
@@ -294,6 +313,63 @@ public class Character : MonoBehaviour
 
 	void Booster()
 	{
+	}
+
+
+	// property ----------------------------------------------------------
+	CharacterPose _pose = CharacterPose.STAND;
+	public CharacterPose pose
+	{
+		get
+		{
+			return _pose;
+		}
+		set
+		{
+			if (_pose != value)
+			{
+				_head.ResetRotation ();
+				_handLeft.ResetRotation ();
+				_handRight.ResetRotation ();
+				_weapon.ResetRotation ();
+			}
+
+			_pose = value;
+
+			_animator.SetInteger ("pose", (int)value);
+		}
+	}
+
+	MoveDirection _moveDirection = MoveDirection.STOP;
+	public MoveDirection moveDirection
+	{
+		get
+		{
+			return _moveDirection;
+		}
+		set
+		{
+			_moveDirection = value;
+
+			_animator.SetInteger ("move", (int)value);
+		}
+	}
+
+	bool _flip = false;
+	public bool flip
+	{
+		get
+		{
+			return _flip;
+		}
+		set
+		{
+			_flip = value;
+
+			Vector3 theScale = transform.localScale;
+			theScale.x *= -1;
+			transform.localScale = theScale;
+		}
 	}
 
 

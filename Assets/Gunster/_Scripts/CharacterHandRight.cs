@@ -1,48 +1,55 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class CharacterHandRight : MonoBehaviour 
+public enum CharacterHandRightSprite
 {
+	BEND_0 = 0,
+	BEND_1 = 1,
+	BEND_2 = 2,
+	BEND_3 = 3,
+	BEND_4 = 4,
+	BEND_5 = 5,
+}
 
+public class CharacterHandRight : CharacterParts 
+{
+	[SerializeField] Sprite[] _sprites;
+
+	SpriteRenderer _spriteRenderer;
 
 
 	// unity functions ---------------------------------------------------
+	void Start()
+	{
+		defaultSpriteAngle = -90.0f;
 
+		_spriteRenderer = GetComponent<SpriteRenderer> ();
+	}
 
 
 	// public functions ---------------------------------------------------
-	public void SetShootAngle (float shootAngle, CharacterPose characterPose)
+	public void ChangeSprite (CharacterHandRightSprite index)
 	{
-		float revisionAngle;
-		float revisionOffset = 0.3f * shootAngle;
-
-		switch (characterPose)
+		if ((int)index < _sprites.Length)
 		{
-			case CharacterPose.CROWL:
-				{
-					revisionAngle = Mathf.Clamp (shootAngle+revisionOffset, 0.0f-Character.CROWL_POSE_ANGLE_RANGE, 0.0f+Character.CROWL_POSE_ANGLE_RANGE);
-				}
-				break;
-			default:
-				{
-					revisionAngle = Mathf.Clamp (shootAngle+revisionOffset, -90.0f, 90.0f);
-				}
-				break;
+			_spriteRenderer.sprite = _sprites [(int)index];
 		}
-				
-		transform.rotation = Quaternion.Euler(new Vector3(0,0,revisionAngle));
 	}
 
 
 	// animation event ---------------------------------------------------
 	public void OnAnimation_DeathFront (int keyFrame)
 	{
-		transform.rotation = Quaternion.Euler(new Vector3(0,0,-90));
+		transform.rotation = Quaternion.Euler(new Vector3(0,0,-45));
+
+		ChangeSprite (CharacterHandRightSprite.BEND_0);
 	}
 
 	public void OnAnimation_DeathBack (int keyFrame)
 	{
-		transform.rotation = Quaternion.Euler(new Vector3(0,0,-55));
+		transform.rotation = Quaternion.Euler(new Vector3(0,0,0));
+
+		ChangeSprite (CharacterHandRightSprite.BEND_1);
 	}
 
 	public void OnAnimation_SkyDeathFront (int keyFrame)
@@ -75,5 +82,6 @@ public class CharacterHandRight : MonoBehaviour
 	public void OnAnimation_SkyDeathBack (int keyFrame)
 	{
 		transform.rotation = Quaternion.Euler(new Vector3(0,0,-40));
+
 	}
 }

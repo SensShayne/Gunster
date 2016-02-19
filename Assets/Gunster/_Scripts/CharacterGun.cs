@@ -1,13 +1,18 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class CharacterGun : MonoBehaviour 
+public class CharacterGun : CharacterParts 
 {
 	[SerializeField] Bullet _bullet;
+	//[SerializeField] BulletSpawn _bulletSpawn;
 	[SerializeField] Transform _bulletSpawn;
+
 	[SerializeField] float _timeBetweenShoot;
 	[SerializeField] float _reloadTime;
 	[SerializeField] uint _initialAmmo;
+
+	[SerializeField] uint _leftHandSpriteIndex;
+	[SerializeField] uint _rightHandSpriteIndex;
 
 	float _shootTimer = 0.0f;
 	uint _remainAmmo;
@@ -16,30 +21,58 @@ public class CharacterGun : MonoBehaviour
 	// unity functions ---------------------------------------------------
 	void Start()
 	{
+		defaultSpriteAngle = -90.0f;
+
 		_remainAmmo = _initialAmmo;
+
+		// search hand
+		transform.parent.parent.Find ("Hand Left").
+		gameObject.GetComponent<CharacterHandLeft>().ChangeSprite((CharacterHandLeftSprite)_leftHandSpriteIndex);
+		transform.parent.parent.Find ("Hand Right").
+		gameObject.GetComponent<CharacterHandRight>().ChangeSprite((CharacterHandRightSprite)_rightHandSpriteIndex);
 	}
 
 
 	// public functions ---------------------------------------------------
-	public void SetShootAngle (float shootAngle, CharacterPose characterPose)
+	public override void LookAt (Vector3 sourcePostion, Vector3 targetPosition, CharacterPose characterPose)
 	{
-		float revisionAngle;
+		//_bulletSpawn.LookAt (transform.position, targetPosition, characterPose);
+
+		const float bulletSpawnDefaultAngle = 0.0f;
+
+		float lookAngle = -Utility.GetAngle (sourcePostion, targetPosition) + bulletSpawnDefaultAngle;
+
+		float revisionAngle = 0.0f;
 
 		switch (characterPose)
 		{
 			case CharacterPose.CROWL:
 				{
-					revisionAngle = Mathf.Clamp (shootAngle, 0.0f-Character.CROWL_POSE_ANGLE_RANGE, 0.0f+Character.CROWL_POSE_ANGLE_RANGE);
+					bool isCharacterFlip = targetPosition.x > transform.parent.parent.transform.position.x;
+					if (!isCharacterFlip)
+					{
+						revisionAngle = Mathf.Clamp (lookAngle, 
+							Utility.CalcDefaultLeftAngle (bulletSpawnDefaultAngle)-Character.CROWL_POSE_ANGLE_RANGE, 
+							Utility.CalcDefaultLeftAngle (bulletSpawnDefaultAngle)+Character.CROWL_POSE_ANGLE_RANGE);
+					}
+					else if (isCharacterFlip)
+					{
+						revisionAngle = Mathf.Clamp (lookAngle, 
+							Utility.CalcDefaultRightAngle (bulletSpawnDefaultAngle)-Character.CROWL_POSE_ANGLE_RANGE, 
+							Utility.CalcDefaultRightAngle (bulletSpawnDefaultAngle)+Character.CROWL_POSE_ANGLE_RANGE);
+					}
+					Debug.Log (isCharacterFlip);
 				}
 				break;
 			default:
 				{
-					revisionAngle = Mathf.Clamp (shootAngle, -90.0f, 90.0f);
+					revisionAngle = lookAngle;
 				}
 				break;
 		}
-				
-		transform.rotation = Quaternion.Euler(new Vector3(0,0,revisionAngle));
+
+		//_bulletSpawn.transform.rotation = Quaternion.Euler(new Vector3(0,0,revisionAngle));
+		_bulletSpawn.rotation = Quaternion.Euler(new Vector3(0,0,revisionAngle));
 	}
 
 	public void Shoot()
@@ -48,6 +81,7 @@ public class CharacterGun : MonoBehaviour
 		{
 			_shootTimer = Time.time + _timeBetweenShoot;
 
+			//Instantiate (_bullet, _bulletSpawn.transform.position, _bulletSpawn.transform.rotation);
 			Instantiate (_bullet, _bulletSpawn.position, _bulletSpawn.rotation);
 		}
 	}

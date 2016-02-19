@@ -1,34 +1,48 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class CharacterHead : MonoBehaviour 
+public class CharacterHead : CharacterParts 
 {
 
-	// unity functions ---------------------------------------------------
 
+	// unity functions ---------------------------------------------------
+	void Start()
+	{
+		defaultSpriteAngle = -90.0f;
+	}
 
 
 	// public functions --------------------------------------------------
-	public void SetShootAngle (float shootAngle, CharacterPose characterPose)
+	public override void LookAt (Vector3 sourcePostion, Vector3 targetPosition, CharacterPose characterPose)
 	{
+		float lookAngle = Mathf.Abs(Utility.GetAngle (sourcePostion, targetPosition, true, false)) + defaultSpriteAngle;
+
 		float revisionAngle;
 
 		switch (characterPose)
 		{
 			case CharacterPose.CROWL:
 				{
-					revisionAngle = Mathf.Clamp (shootAngle, 0.0f-Character.CROWL_POSE_ANGLE_RANGE, 0.0f+Character.CROWL_POSE_ANGLE_RANGE);
+					revisionAngle = Mathf.Clamp (lookAngle, 
+						Utility.CalcDefaultLeftAngle (defaultSpriteAngle)-Character.CROWL_POSE_ANGLE_RANGE, 
+						Utility.CalcDefaultLeftAngle (defaultSpriteAngle)+Character.CROWL_POSE_ANGLE_RANGE);
 				}
 				break;
 			default:
 				{
-					revisionAngle = Mathf.Clamp (shootAngle, -90.0f, 30.0f);
+					revisionAngle = Mathf.Clamp (lookAngle, 
+						Utility.CalcDefaultUpAngle (defaultSpriteAngle), 
+						Utility.CalcDefaultDownAngle (defaultSpriteAngle) -60.0f);
 				}
 				break;
 		}
 				
 		transform.rotation = Quaternion.Euler(new Vector3(0,0,revisionAngle));
 	}
+
+
+	// private functions -------------------------------------------------
+
 
 
 	// animation event ---------------------------------------------------
